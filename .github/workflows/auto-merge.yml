@@ -1,0 +1,35 @@
+name: Automated Commune Merge
+
+on:
+  pull_request_target:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  socialize-and-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Base Repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.event.pull_request.base.repo.full_name }}
+          ref: main
+          fetch-depth: 0
+
+      - name: Configure Git Author
+        run: |
+          git config --global user.name "Commune Automation Bot"
+          git config --global user.email "bot@digital-commune.local"
+
+      - name: Fetch and Merge PR Branch
+        run: |
+          git remote add fork ${{ github.event.pull_request.head.repo.clone_url }}
+          git fetch fork ${{ github.event.pull_request.head.ref }}
+          git merge fork/${{ github.event.pull_request.head.ref }} --allow-unrelated-histories -m "Automated merge of PR #${{ github.event.pull_request.number }}"
+
+      - name: Push to Main
+        run: |
+          git push origin main
